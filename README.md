@@ -1,125 +1,233 @@
-#  Video Rental System API
+# RentVideo – Secure Video Rental REST API
 
-A secure RESTful backend service built using **Spring Boot** to manage an online video rental system.  
-The application supports **user registration, authentication, role-based authorization, and video management** while persisting data in **MySQL**.
+RentVideo is a backend RESTful service built with **Spring Boot** that simulates an online video rental system. The application provides secure authentication using **JWT tokens**, role-based authorization, and supports renting and returning videos with business rules enforced at the service layer.
 
-This project demonstrates backend development practices including **Spring Security, REST API design, layered architecture, and database integration using JPA**.
-
----
-
-##  Features
-
-- User Registration with **BCrypt password hashing**
-- **Basic Authentication** using Spring Security
-- **Role-based authorization** with two roles: ADMIN and CUSTOMER
-- Video management APIs (Create, Update, Delete, Browse)
-- MySQL database persistence
-- Layered architecture (Controller → Service → Repository)
-- Secure RESTful API endpoints
+This project demonstrates modern backend development practices including layered architecture, stateless authentication, and relational database design.
 
 ---
 
-##  Tech Stack
+## Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-Spring Boot | Backend framework |
-Spring Security | Authentication & Authorization |
-Spring Data JPA | ORM and database interaction |
-MySQL | Relational database |
-Gradle | Build tool |
-BCrypt | Secure password hashing |
+- Java 17
+- Spring Boot
+- Spring Security
+- JWT Authentication
+- Spring Data JPA (Hibernate)
+- MySQL
+- Gradle
+- REST API Architecture
 
 ---
 
-##  Project Structure
+## Core Features
+
+### User Authentication
+- User registration
+- Secure password storage using **BCrypt**
+- JWT based login authentication
+- Stateless API authentication
+
+### Role Based Authorization
+
+Two system roles are supported:
+
+- **ADMIN**
+- **CUSTOMER**
+
+Permissions:
+
+| Role | Permissions |
+|-----|-------------|
+ADMIN | Create, update, delete videos |
+CUSTOMER | Browse videos, rent videos, return videos |
+
+---
+
+## Video Management
+
+The system allows managing video inventory.
+
+Each video contains:
+
+- Title
+- Director
+- Genre
+- Availability Status
+
+Features:
+
+- View all videos
+- Add new videos (Admin only)
+- Update video details (Admin only)
+- Delete videos (Admin only)
+
+---
+
+## Rental Management
+
+Users can rent and return videos.
+
+Business rules enforced:
+
+- A user can have **maximum 2 active rentals**
+- Videos must exist before renting
+- Users can only return videos they have rented
+
+---
+
+## API Endpoints
+
+### Authentication
+
+#### Register User
+
+POST /auth/register
+
+Example Request:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "role": "CUSTOMER"
+}
+```
+
+---
+
+#### Login
+
+POST /auth/login
+
+Response:
+
+```json
+{
+  "token": "JWT_TOKEN"
+}
+```
+
+Use the token in headers:
 
 ```
-src/main/java/com/project2/rentvideo
+Authorization: Bearer JWT_TOKEN
+```
 
+---
+
+## Video APIs
+
+### Get All Videos
+
+GET /videos
+
+### Create Video (Admin Only)
+
+POST /videos
+
+### Update Video (Admin Only)
+
+PUT /videos/{id}
+
+### Delete Video (Admin Only)
+
+DELETE /videos/{id}
+
+---
+
+## Rental APIs
+
+### Rent Video
+
+POST /rentals/videos/{videoId}/rent
+
+### Return Video
+
+POST /rentals/videos/{videoId}/return
+
+---
+
+## Project Architecture
+
+The project follows a layered architecture for separation of concerns.
+
+```
 controller
-   └── AuthController
-   └── VideoController
-
-model
-   └── User
-   └── Video
-   └── Role
-
-repository
-   └── UserRepository
-   └── VideoRepository
+    AuthController
+    VideoController
+    RentalController
 
 service
-   └── UserService
-   └── VideoService
+    UserService
+    VideoService
+    RentalService
+
+repository
+    UserRepository
+    VideoRepository
+    RentalRepository
+
+model
+    User
+    Video
+    Rental
+    Role
 
 security
-   └── SecurityConfig
-   └── CustomUserDetailsService
+    SecurityConfig
+    JwtService
+    JwtFilter
+    CustomUserDetailsService
 ```
 
 ---
 
-##  Security Implementation
+## Database Design
 
-The API uses **Spring Security with Basic Authentication** to authenticate users.
+### User
 
-Supported Roles:
+| Field | Description |
+|------|-------------|
+id | Primary key |
+email | User email |
+password | Encrypted password |
+firstName | First name |
+lastName | Last name |
+role | ADMIN / CUSTOMER |
 
-```
-ADMIN
-CUSTOMER
-```
+### Video
 
-Authorization rules:
+| Field | Description |
+|------|-------------|
+id | Primary key |
+title | Video title |
+director | Director name |
+genre | Video genre |
+available | Availability status |
 
-| Endpoint | Access |
-|--------|--------|
-POST /auth/register | Public |
-GET /videos | Authenticated Users |
-POST /videos | ADMIN only |
-PUT /videos/{id} | ADMIN only |
-DELETE /videos/{id} | ADMIN only |
+### Rental
 
-Passwords are securely stored using **BCrypt hashing**.
-
----
-
-## 🗄 Database Schema
-
-### Users Table
-
-| Field | Type |
-|------|------|
-id | Long |
-email | String |
-password | String (BCrypt encrypted) |
-firstName | String |
-lastName | String |
-role | ENUM (ADMIN / CUSTOMER) |
-
-### Videos Table
-
-| Field | Type |
-|------|------|
-id | Long |
-title | String |
-director | String |
-genre | String |
-available | Boolean |
+| Field | Description |
+|------|-------------|
+id | Primary key |
+user_id | Renting user |
+video_id | Rented video |
+rented_at | Rental timestamp |
+returned | Rental status |
 
 ---
 
-## ⚙️ Running the Project
+## Running the Project
 
-### 1️ Clone the repository
+### 1. Clone the repository
 
 ```
 git clone https://github.com/YOUR_USERNAME/rentvideo-system.git
 ```
 
-### 2️ Configure MySQL database
+### 2. Configure MySQL
 
 Create database:
 
@@ -133,15 +241,17 @@ Update `application.properties`:
 spring.datasource.url=jdbc:mysql://localhost:3306/rentvideo
 spring.datasource.username=root
 spring.datasource.password=YOUR_PASSWORD
+
+spring.jpa.hibernate.ddl-auto=update
 ```
 
-### 3️ Run the application
+### 3. Run the application
 
 ```
 ./gradlew bootRun
 ```
 
-Server will start on:
+Server will start at:
 
 ```
 http://localhost:8080
@@ -149,67 +259,34 @@ http://localhost:8080
 
 ---
 
-##  Example API Requests
+## Security Design
 
-### Register User
+The application uses **JWT based stateless authentication**.
 
-```
-POST /auth/register
-```
+Authentication flow:
 
-Request Body:
-
-```json
-{
-  "email": "user@test.com",
-  "password": "123456",
-  "firstName": "John",
-  "lastName": "Doe"
-}
-```
-
----
-
-### Get All Videos
-
-```
-GET /videos
-```
-
-Requires **Basic Authentication**.
-
----
-
-### Create Video (ADMIN only)
-
-```
-POST /videos
-```
-
-Example request body:
-
-```json
-{
-  "title": "Inception",
-  "director": "Christopher Nolan",
-  "genre": "Sci-Fi",
-  "available": true
-}
-```
+1. User registers
+2. User logs in
+3. Server generates JWT token
+4. Client includes token in request headers
+5. JWT filter validates token before accessing secured endpoints
 
 ---
 
 ## Future Improvements
 
-- JWT based authentication
-- Video rental and return feature
-- Pagination and search for videos
-- Docker containerization
+Possible enhancements:
+
+- Pagination for video listing
+- Rental history tracking
+- Video availability management
+- Global exception handling
 - Unit and integration testing
+- API documentation using Swagger
 
 ---
 
 ## Author
 
-**Rishabh**  
-Backend Developer | Java | Spring Boot
+Rishabh 
+Backend Developer | Java & Spring Boot
